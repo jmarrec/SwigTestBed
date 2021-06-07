@@ -192,7 +192,7 @@ if(BUILD_PYTHON_BINDINGS)
   set(swig_target_name ${target_name}_python)
 
   # **Only** find static libs
-  set(Python_USE_STATIC_LIBS TRUE)
+  #set(Python_USE_STATIC_LIBS TRUE)
 
   find_package(
     Python
@@ -201,7 +201,7 @@ if(BUILD_PYTHON_BINDINGS)
 
   swig_add_library(
     ${swig_target_name}
-    TYPE STATIC
+    #TYPE STATIC
     LANGUAGE python OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/Products/python"
                     OUTFILE_DIR "${CMAKE_CURRENT_BINARY_DIR}/python_wrapper"
     SOURCES ${${target_name}_swig_src})
@@ -230,10 +230,10 @@ if(BUILD_PYTHON_BINDINGS)
     swig_link_libraries(${swig_target_name} PRIVATE Python::Module)
 #  endif()
 
-  #add_test(
-    #NAME test_python_only
-    #WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/python
-    #COMMAND ${Python_EXECUTABLE} test_python_only.rb)
+  add_test(
+    NAME test_python_only
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/python
+    COMMAND ${Python_EXECUTABLE} test_python.py)
 
   # Must call CMake itself in order to set the SWIG_LIB env var for
   # add_custom_command
