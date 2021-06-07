@@ -13,10 +13,22 @@ class Encoding_Test < Minitest::Test
 
   def test_encoding
     test_string = "模型"
-    assert_equal("UTF-8", test_string.encoding.to_s)
+    assert_equal(Encoding::UTF_8, test_string.encoding)
 
     p = Mylib::Model.new(test_string)
     name_string = p.getName()
-    assert_equal("UTF-8", name_string.encoding.to_s)
+    assert_equal(Encoding::UTF_8, name_string.encoding)
+  end
+
+  def test_encoding_explicit
+    Encoding::default_external = Encoding::UTF_8
+    Encoding::default_internal = Encoding::UTF_8
+
+    test_string = "模型"
+    assert_equal(Encoding::UTF_8, test_string.encoding)
+
+    p = Mylib::Model.new(test_string)
+    name_string = p.getName()
+    assert_equal(Encoding::UTF_8, name_string.encoding)
   end
 end
