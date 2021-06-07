@@ -4,7 +4,7 @@
 
 #ifdef SWIGRUBY
 %ensure_fragment(SWIGFromCharPtrAndSize)
-// Override to force utf8 encoding via rb_utf8_str_new instead of rb_str_new
+// Override to force utf8 encoding via rb_utf8_str_new instead of rb_str_new: TODO: this is ignored by swig actually
 %fragment("SWIG_FromCharPtrAndSize","header",fragment="SWIG_pchar_descriptor") {
 SWIGINTERNINLINE VALUE
 SWIG_FromCharPtrAndSize(const char* carray, size_t size)
