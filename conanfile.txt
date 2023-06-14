@@ -1,0 +1,7 @@
+[requires]
+jsoncpp/1.9.5#536d080aa154e5853332339bf576747c
+swig/4.1.0#f4419c5ab88f877272cbaa36dd0237ff
+
+[generators]
+CMakeToolchain
+CMakeDeps

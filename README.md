@@ -10,9 +10,10 @@ This assumes you have SWIG, Python and Ruby available in your path (Note: Tested
 In the root of the directory:
 
 ```
-mkdir build
+pip install conan==1.61.0
+conan install . -pr:b=default -b missing -s build_type=Debug -if build/ -of build/ -c tools.cmake.cmaketoolchain:generator=Ninja
 cd build
-cmake -G Ninja ../
+cmake -G Ninja -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE:STRING=Debug ..
 ninja
 ```
 
