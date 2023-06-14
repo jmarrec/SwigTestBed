@@ -1,17 +1,22 @@
-import os
 import sys
-import unittest
+from pathlib import Path
+import json
 
-LIB_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                          '../build/Products/python/')
-sys.path.append(LIB_FOLDER)
+LIB_FOLDER = Path(__file__).resolve().parent.parent / 'build/Products/python'
+EXPECTED_JSON = Path(__file__).resolve().parent.parent / 'tests/expected.json'
+
+sys.path.append(str(LIB_FOLDER))
 
 import mylib
 
-class TestStringMethods(unittest.TestCase):
+def test_encoding():
+    test_string = "模型"
+    m = mylib.Model(test_string)
+    name_string = m.getName()
+    assert test_string == name_string
 
-    def test_encoding(self):
-        test_string = "模型"
-        m = mylib.Model(test_string)
-        name_string = m.getName()
-        self.assertEqual(test_string, name_string)
+def test_json():
+    m = mylib.Model("John")
+    expected = json.loads(EXPECTED_JSON.read_text())
+    d = m.toJSON()
+    assert d == expected

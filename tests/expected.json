@@ -1,0 +1,37 @@
+{
+  "array": [
+    "value1",
+    "value2"
+  ],
+  "bool": true,
+  "complex": {
+    "array": [
+      {
+        "name": "A",
+        "object": {
+          "array": [
+            "sub1",
+            "sub2"
+          ],
+          "name1": "A"
+        }
+      },
+      {
+        "name": "B",
+        "object": {
+          "array": [
+            "sub1",
+            "sub2"
+          ],
+          "name1": "A"
+        }
+      }
+    ]
+  },
+  "int": 1,
+  "name": "John",
+  "object": {
+    "name1": "A",
+    "value": 10.53
+  }
+}
