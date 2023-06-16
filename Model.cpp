@@ -1,9 +1,19 @@
 #include "Model.hpp"
+#include <stdexcept>
 #include <string>
 #include <json/json.h>
 
 namespace Test {
 Model::Model(std::string name) : name_(std::move(name)) {}
+
+Model Model::fromJSON(Json::Value value) {
+
+  if (!value.isMember("name") && value["name"].isString()) {
+    throw std::runtime_error("the name parameter is required");
+  }
+
+  return Model(value["name"].asString());
+}
 
 const std::string& Model::getName() const {
   return name_;
@@ -38,6 +48,15 @@ Json::Value Model::toJSON() const {
   }
 
   return root;
+}
+
+bool Model::setPath(std::filesystem::path p) {
+  path_ = std::move(p);
+  return true;
+}
+
+std::filesystem::path Model::getPath() const {
+  return path_;
 }
 
 }  // namespace Test

@@ -95,6 +95,9 @@ SWIG_FromCharPtrAndSize(const char* carray, size_t size)
 %typemap(out, fragment="JsonToDict") Json::Value {
   $result = SWIG_From_JsonValue($1);
 }
+
+%include <std_filesystem.i>
+
 #endif
 
 #if defined SWIGRUBY
@@ -131,6 +134,7 @@ SWIG_FromCharPtrAndSize(const char* carray, size_t size)
 %typemap(out, fragment="JsonToDict") Json::Value {
   $result = SWIG_From_JsonValue($1);
 }
+
 #endif
 
 %include <Model.hpp>

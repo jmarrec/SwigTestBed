@@ -8,6 +8,8 @@ target_compile_features(cpp_compile_options INTERFACE cxx_std_20)
 if(MSVC)
   target_compile_options(cpp_warning_options INTERFACE /W4 /Werror)
 else()
+  target_compile_options(cpp_compile_options INTERFACE -fPIC)
+
   target_compile_options(
     cpp_warning_options INTERFACE -Wall -Wextra -Wconversion -Werror -Wno-unused-variable -Wno-unused-parameter)
 #  target_compile_options(cpp_compile_options
