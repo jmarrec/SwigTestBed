@@ -14,6 +14,9 @@ class Model
  public:
   explicit Model(std::string name);
   static Model fromJSON(Json::Value value);
+  static Json::Value roundTrip(Json::Value value);
+  static Json::Value roundTripRef(const Json::Value& value);
+  static const Json::Value& makeJSONConstRef();
 
   const std::string& getName() const;
   bool setName(const std::string& name);

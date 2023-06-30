@@ -8,7 +8,7 @@ Model::Model(std::string name) : name_(std::move(name)) {}
 
 Model Model::fromJSON(Json::Value value) {
 
-  if (!value.isMember("name") && value["name"].isString()) {
+  if (!(value.isMember("name") && value["name"].isString())) {
     throw std::runtime_error("the name parameter is required");
   }
 
@@ -57,6 +57,42 @@ bool Model::setPath(std::filesystem::path p) {
 
 std::filesystem::path Model::getPath() const {
   return path_;
+}
+
+Json::Value Model::roundTrip(Json::Value value) {
+  return value;
+}
+Json::Value Model::roundTripRef(const Json::Value& value) {
+  return value;
+}
+
+const Json::Value& Model::makeJSONConstRef() {
+  const static Json::Value root = []() {
+    Json::Value root;
+    root["name"] = "Static";
+    root["int"] = 1;
+    root["bool"] = true;
+
+    auto& arrayValue = root["array"];
+    arrayValue.append("value1");
+    arrayValue.append("value2");
+
+    root["object"]["name1"] = "A";
+    root["object"]["value"] = 10.53;
+
+    auto& complexObject = root["complex"];
+    auto& complexArray = complexObject["array"];
+    for (const auto& s : {"A", "B"}) {
+      Json::Value& attributeElement = complexArray.append(Json::Value(Json::objectValue));
+      attributeElement["name"] = s;
+      attributeElement["object"]["name1"] = "A";
+      attributeElement["object"]["array"].append("sub1");
+      attributeElement["object"]["array"].append("sub2");
+    }
+
+    return root;
+  }();
+  return root;
 }
 
 }  // namespace Test
