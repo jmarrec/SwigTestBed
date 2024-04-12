@@ -46,6 +46,7 @@ SWIG_FromCharPtrAndSize(const char* carray, size_t size)
 %module mylib
 
 %include <std_string.i>
+%include <std_map.i>
 
 
 %{
@@ -349,7 +350,6 @@ SWIG_FromCharPtrAndSize(const char* carray, size_t size)
       }
     },
     $1);
-
 }
 
 #endif
@@ -517,6 +517,8 @@ SWIG_FromCharPtrAndSize(const char* carray, size_t size)
 }
 
 #endif
+
+%template(StringOSArgumentVariantMap) std::map<std::string, Test::OSArgumentVariant>;
 
 %include <Model.hpp>
 

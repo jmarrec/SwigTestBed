@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <string>
 #include <json/json.h>
+#include <fmt/format.h>
 
 namespace Test {
 Model::Model(std::string name) : name_(std::move(name)) {}
@@ -99,6 +100,24 @@ const Json::Value& Model::makeJSONConstRef() {
 template <class>
 inline constexpr bool always_false_v = false;
 
+std::string printOSArgumentVariant(const OSArgumentVariant& argVar) {
+  std::stringstream ss;
+
+  // We use std::visit, filtering out the case where it's monostate
+  // Aside from monostate, every possible type is streamable
+  std::visit(
+    [&ss](const auto& arg) {
+      // Needed to properly compare the types
+      using T = std::decay_t<decltype(arg)>;
+      if constexpr (!std::is_same_v<T, std::monostate>) {
+        ss << arg;
+      }
+    },
+    argVar);
+
+  return ss.str();
+}
+
 Json::Value argumentVariantToJSONValue(const OSArgumentVariant& argVar) {
   return std::visit(
     [](auto&& arg) -> Json::Value {
@@ -135,4 +154,26 @@ bool Model::setVariantValue(const OSArgumentVariant& argVar) {
   return true;
 }
 
+std::filesystem::path toPath(const std::string& s) {
+  return std::filesystem::path{s};
+}
+
+void consumeArgumentMap(const std::map<std::string, OSArgumentVariant>& user_arguments) {
+  for (const auto& [k, v] : user_arguments) {
+    fmt::print("* {}, {}\n", k, printOSArgumentVariant(v));
+  }
+}
+std::map<std::string, OSArgumentVariant> getMap() {
+  return std::map<std::string, OSArgumentVariant>{
+    {"null", OSArgumentVariant{}},
+    {"bool", OSArgumentVariant{true}},
+    {"double", OSArgumentVariant{1.0}},
+    {"int", OSArgumentVariant{1}},
+    {"string", OSArgumentVariant{std::string{"string"}}},
+    {
+      "path",
+      OSArgumentVariant{std::filesystem::path{"lib/measures/"}},
+    },
+  };
+}
 }  // namespace Test

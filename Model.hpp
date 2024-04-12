@@ -2,6 +2,7 @@
 #define MODEL_HPP
 
 #include <filesystem>
+#include <map>
 #include <string>
 #include <variant>
 
@@ -40,6 +41,14 @@ class Model
 };
 
 Json::Value argumentVariantToJSONValue(const OSArgumentVariant& argVar);
+std::string printOSArgumentVariant(const OSArgumentVariant& argVar);
+
+void consumeArgumentMap(const std::map<std::string, OSArgumentVariant>& user_arguments);
+
+// Testing returning a map
+std::map<std::string, OSArgumentVariant> getMap();
+
+std::filesystem::path toPath(const std::string& s);
 
 }  // namespace Test
 
