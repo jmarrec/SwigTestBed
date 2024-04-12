@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.17.5)
 
 add_library(cpp_warning_options INTERFACE)
 add_library(cpp_compile_options INTERFACE)
+add_library(swig_warning_options INTERFACE)
 
 target_compile_features(cpp_compile_options INTERFACE cxx_std_20)
 
@@ -12,7 +13,11 @@ else()
 
   target_compile_options(
     cpp_warning_options INTERFACE -Wall -Wextra -Wconversion -Werror -Wno-unused-variable -Wno-unused-parameter)
-#  target_compile_options(cpp_compile_options
+
+  target_compile_options(
+    swig_warning_options INTERFACE -Wno-deprecated-declarations -Wno-reserved-user-defined-literal -Wno-register -Wno-deprecated-volatile)
+
+ #  target_compile_options(cpp_compile_options
 #                         INTERFACE -fsanitize=undefined,address)
 #  target_link_options(cpp_compile_options INTERFACE
 #                      -fsanitize=undefined,address)
@@ -87,6 +92,7 @@ include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 ###############################################################################
 
 find_package(jsoncpp REQUIRED)
+find_package(fmt REQUIRED)
 
 set(target_name mylib)
 
@@ -94,7 +100,8 @@ set(${target_name}_src Model.hpp Model.cpp)
 
 add_library(${target_name} STATIC ${${target_name}_src})
 target_link_libraries(${target_name} PRIVATE
-  jsoncpp::jsoncpp
+  JsonCpp::JsonCpp
+  fmt::fmt
   cpp_warning_options
   cpp_compile_options
 )
@@ -166,8 +173,15 @@ if(BUILD_PYTHON_BINDINGS)
 
   swig_link_libraries(${swig_target_name}
     PUBLIC ${target_name}
-    PRIVATE cpp_compile_options
-    jsoncpp::jsoncpp)
+    PRIVATE
+      cpp_compile_options
+      JsonCpp::JsonCpp
+      swig_warning_options
+  )
+
+  if(APPLE AND NOT CMAKE_COMPILER_IS_GNUCXX)
+    target_link_options(${swig_target_name} PRIVATE -flat_namespace -undefined suppress)
+  endif()
 
   target_include_directories(${swig_target_name} PRIVATE ${Python_INCLUDE_DIRS})
 #  if(MSVC)
@@ -228,9 +242,16 @@ if(BUILD_RUBY_BINDINGS)
 
   swig_link_libraries(${swig_target_name}
     PUBLIC ${target_name}
-    PRIVATE ${RUBY_LIBRARIES} 
-    jsoncpp::jsoncpp
-    cpp_compile_options)
+    PRIVATE
+      ${RUBY_LIBRARIES}
+      cpp_compile_options
+      JsonCpp::JsonCpp
+      swig_warning_options
+  )
+
+ if(APPLE AND NOT CMAKE_COMPILER_IS_GNUCXX)
+    target_link_options(${swig_target_name} PRIVATE -flat_namespace -undefined suppress)
+  endif()
 
   message("RUBY_EXECUTABLE=${RUBY_EXECUTABLE}")
   add_test(
