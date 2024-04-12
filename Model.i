@@ -54,9 +54,59 @@ SWIG_FromCharPtrAndSize(const char* carray, size_t size)
 // #if defined SWIGRUBY
 //   #include <functional>
 // #endif
+  #include <type_traits>
 %}
 
 #if defined SWIGPYTHON
+
+%fragment("SWIG_std_filesystem", "header") {
+  SWIGINTERN PyObject *SWIG_std_filesystem_importPathClass() {
+    PyObject *module = PyImport_ImportModule("pathlib");
+    PyObject *cls = PyObject_GetAttrString(module, "Path");
+    Py_DECREF(module);
+    return cls;
+  }
+
+  SWIGINTERN bool SWIG_std_filesystem_isPathInstance(PyObject *obj) {
+    PyObject *cls = SWIG_std_filesystem_importPathClass();
+    bool is_instance = PyObject_IsInstance(obj, cls);
+    Py_DECREF(cls);
+    return is_instance;
+  }
+
+  SWIGINTERN std::filesystem::path SWIG_std_filesystem_python_to_cpp(PyObject *obj) {
+    PyObject *str_obj = PyObject_Str(obj);
+    std::filesystem::path result;
+    if constexpr (std::is_same_v<typename std::filesystem::path::value_type, wchar_t>) {
+      Py_ssize_t size = 0;
+      wchar_t *ws = PyUnicode_AsWideCharString(str_obj, &size);
+      result = std::filesystem::path(std::wstring(ws, static_cast<size_t>(size)));
+      PyMem_Free(ws);
+    } else {
+      const char *s = PyUnicode_AsUTF8(str_obj);
+      result = std::filesystem::path(s);
+    }
+    Py_DECREF(str_obj);
+    return result;
+  }
+
+  SWIGINTERN PyObject * SWIG_std_filesystem_python_to_cpp(const std::filesystem::path& p) {
+    PyObject *args;
+    if constexpr (std::is_same_v<typename std::filesystem::path::value_type, wchar_t>) {
+      std::wstring s = p.generic_wstring();
+      args = Py_BuildValue("(u)", s.data());
+    } else {
+      std::string s = p.generic_string();
+      args = Py_BuildValue("(s)", s.data());
+    }
+    PyObject *cls = SWIG_std_filesystem_importPathClass();
+    PyObject * result = PyObject_CallObject(cls, args);
+    Py_DECREF(cls);
+    Py_DECREF(args);
+    return result;
+  }
+}
+
 %fragment("JsonToDict","header", fragment="SWIG_FromCharPtrAndSize") {
   SWIGINTERN PyObject* SWIG_From_JsonValue(const Json::Value& value) {
     PyErr_WarnEx(PyExc_UserWarning, "Translating a Json::Value to a PyObject", 1);  // Debugging
@@ -113,7 +163,6 @@ SWIG_FromCharPtrAndSize(const char* carray, size_t size)
 %typemap(out, fragment="JsonToDict") Json::Value {
   $result = SWIG_From_JsonValue($1);
 }
-
 
 %fragment("ToJsonValue", "header") {
   SWIGINTERN Json::Value SWIG_to_JsonValue(PyObject * obj) {
@@ -219,7 +268,89 @@ SWIG_FromCharPtrAndSize(const char* carray, size_t size)
   }
 }
 
-%include <std_filesystem.i>
+
+%fragment("ToOSArgumentVariant", "header", fragment="SWIG_std_filesystem") {
+  SWIGINTERN Test::OSArgumentVariant SWIG_to_OSArgumentVariant(PyObject * obj) {
+    PyErr_WarnEx(PyExc_UserWarning, "Constructing a OSArgumentVariant", 1);  // Debugging
+    if (obj == Py_None) {
+      return Test::OSArgumentVariant{};
+    }
+
+    if (PyBool_Check(obj)) {
+      bool b = PyObject_IsTrue(obj) == 1;
+      return Test::OSArgumentVariant{b};
+    }
+
+    if (PyFloat_Check(obj)) {
+      auto d = PyFloat_AsDouble(obj);
+      return Test::OSArgumentVariant{d};
+    }
+
+    if (PyNumber_Check(obj)) { // or PyLong_Check
+      std::int64_t i = PyLong_AsLongLong(obj);
+      return Test::OSArgumentVariant{static_cast<int>(i)};
+    }
+
+    if (SWIG_std_filesystem_isPathInstance(obj)) {
+      PyErr_WarnEx(PyExc_UserWarning, "Constructing a OSArgumentVariant as Path", 1);  // Debugging
+      return Test::OSArgumentVariant{SWIG_std_filesystem_python_to_cpp(obj)};
+    }
+
+    if (PyUnicode_Check(obj)) {
+      const char *p = PyUnicode_AsUTF8(obj);
+      return Test::OSArgumentVariant{std::string{p}};
+    }
+
+    throw std::invalid_argument("OSArgumentVariant must be one of None, bool, int, Float, or pathlib.Path");
+  }
+
+}
+
+
+%typemap(in, fragment="ToOSArgumentVariant") std::variant<std::monostate, bool, double, int, std::string, std::filesystem::path> {
+  void* argp = 0;
+  int res = SWIG_ConvertPtr($input, &argp, $descriptor(Test::OSArgumentVariant *), $disown |  0 );
+  if (SWIG_IsOK(res)) {
+    PyErr_WarnEx(PyExc_UserWarning, "reusing a OSArgumentVariant", 1);
+    Json::Value * temp = %reinterpret_cast(argp, $ltype *);
+    $1 = *temp;
+  } else {
+    $1 = SWIG_to_OSArgumentVariant($input);
+  }
+}
+
+%typemap(in, fragment="ToOSArgumentVariant") std::variant<std::monostate, bool, double, int, std::string, std::filesystem::path> const *, std::variant<std::monostate, bool, double, int, std::string, std::filesystem::path> const & {
+  void* argp = 0;
+  int res = SWIG_ConvertPtr($input, &argp, $descriptor, $disown |  0 );
+  if (SWIG_IsOK(res)) {
+    PyErr_WarnEx(PyExc_UserWarning, "reusing a OSArgumentVariant", 1);
+    $1 = %reinterpret_cast(argp, $ltype);
+  } else {
+    $1 = new Test::OSArgumentVariant(SWIG_to_OSArgumentVariant($input));
+  }
+}
+
+%typemap(out, fragment="SWIG_std_filesystem", fragment="SWIG_FromCharPtrAndSize") std::variant<std::monostate, bool, double, int, std::string, std::filesystem::path> {
+  $result = std::visit(
+    [](auto&& arg) -> PyObject* {
+      using T = std::decay_t<decltype(arg)>;
+      if constexpr (std::is_same_v<T, std::monostate>) {
+        return Py_None;
+      } else if constexpr (std::is_same_v<T, bool>) {
+        return arg ? Py_True : Py_False;
+      } else if constexpr (std::is_same_v<T, double>) {
+        return PyFloat_FromDouble(arg);
+      } else if constexpr (std::is_same_v<T, int>) {
+        return PyLong_FromLongLong(arg);
+      } else if constexpr (std::is_same_v<T, std::string>) {
+        return SWIG_FromCharPtrAndSize(arg.data(), arg.size());;
+      } else if constexpr (std::is_same_v<T, std::filesystem::path>) {
+        return SWIG_std_filesystem_python_to_cpp(arg);
+      }
+    },
+    $1);
+
+}
 
 #endif
 

@@ -95,4 +95,44 @@ const Json::Value& Model::makeJSONConstRef() {
   return root;
 }
 
+// helper constant for the visitor below so we static assert we didn't miss a type
+template <class>
+inline constexpr bool always_false_v = false;
+
+Json::Value argumentVariantToJSONValue(const OSArgumentVariant& argVar) {
+  return std::visit(
+    [](auto&& arg) -> Json::Value {
+      using T = std::decay_t<decltype(arg)>;
+      if constexpr (std::is_same_v<T, std::monostate>) {
+        return Json::nullValue;
+      } else if constexpr (std::is_same_v<T, bool>) {  // NOLINT(bugprone-branch-clone)
+        return arg;
+      } else if constexpr (std::is_same_v<T, double>) {
+        return arg;
+      } else if constexpr (std::is_same_v<T, int>) {
+        return arg;
+      } else if constexpr (std::is_same_v<T, std::string>) {
+        return arg;
+      } else if constexpr (std::is_same_v<T, std::filesystem::path>) {
+        return arg.string();
+      } else {
+        static_assert(always_false_v<T>, "non-exhaustive visitor!");
+      }
+    },
+    argVar);
+}
+
+OSArgumentVariant Model::variantValue() const {
+  return m_variant;
+}
+
+Json::Value Model::variantValueAsJSON() const {
+  return argumentVariantToJSONValue(m_variant);
+}
+
+bool Model::setVariantValue(const OSArgumentVariant& argVar) {
+  m_variant = argVar;
+  return true;
+}
+
 }  // namespace Test
